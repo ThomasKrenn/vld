@@ -1,8 +1,9 @@
 /***********************************************************************
 * Visual Leak Detector - Internal C++ Heap Management
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
+*
+* Copyright (c) 2005-2014 VLD Team
 *
 * This file is part of VLD.
 *
@@ -20,20 +21,20 @@
 
 #include "stdafx.h"
 
-#define VLDBUILD     // Declares that we are building Visual Leak Detector.
-#include "ntapi.h"   // Provides access to NT APIs.
-#include "vldheap.h" // Provides access to VLD's internal heap data structures.
+#define VLDBUILD          // Declares that we are building Visual Leak Detector.
+#include "ntapi.h"        // Provides access to NT APIs.
+#include "vldheap.h"      // Provides access to VLD's internal heap data structures.
 #include "criticalsection.h"
-#undef new           // Do not map "new" to VLD's new operator in this file
+#undef new      // Do not map "new" to VLD's new operator in this file
 
 // Global variables.
-vldblockheader_t* g_vldBlockList = NULL; // List of internally allocated blocks on VLD's private heap.
-HANDLE            g_vldHeap;             // VLD's private heap.
-CriticalSection   g_vldHeapLock;         // Serializes access to VLD's private heap.
+vldblockheader_t *g_vldBlockList = NULL;      // List of internally allocated blocks on VLD's private heap.
+HANDLE g_vldHeap;                             // VLD's private heap.
+CriticalSection g_vldHeapLock;                // Serializes access to VLD's private heap.
 
 // Local helper functions.
-static inline void* vldnew(size_t size, const char* file, int line);
-static inline void vlddelete(void* block);
+static inline void *vldnew(size_t size, const char *file, int line);
+static inline void vlddelete(void *block);
 
 // scalar new operator - New operator used to allocate a scalar memory block
 //   from VLD's private heap.
@@ -51,7 +52,7 @@ static inline void vlddelete(void* block);
 //    If the allocation succeeds, a pointer to the allocated memory block is
 //    returned. If the allocation fails, NULL is returned.
 //
-void* operator new (size_t size, const char* file, int line)
+void *operator new(size_t size, const char *file, int line)
 {
    return vldnew(size, file, line);
 }
@@ -72,7 +73,7 @@ void* operator new (size_t size, const char* file, int line)
 //    If the allocation succeeds, a pointer to the allocated memory block is
 //    returned. If the allocation fails, NULL is returned.
 //
-void* operator new [](size_t size, const char* file, int line)
+void *operator new[](size_t size, const char *file, int line)
 {
    return vldnew(size, file, line);
 }
@@ -86,7 +87,7 @@ void* operator new [](size_t size, const char* file, int line)
 //
 //    None.
 //
-void operator delete (void* block)
+void operator delete(void *block)
 {
    vlddelete(block);
 }
@@ -100,7 +101,7 @@ void operator delete (void* block)
 //
 //    None.
 //
-void operator delete [](void* block)
+void operator delete[](void *block)
 {
    vlddelete(block);
 }
@@ -112,7 +113,7 @@ void operator delete [](void* block)
 //  Note: This version of the delete operator should never be called directly.
 //    The compiler automatically generates calls to this function as needed.
 //
-void operator delete (void* block, const char*, int)
+void operator delete(void *block, const char *, int)
 {
    vlddelete(block);
 }
@@ -124,7 +125,7 @@ void operator delete (void* block, const char*, int)
 //  Note: This version of the delete operator should never be called directly.
 //    The compiler automatically generates calls to this function as needed.
 //
-void operator delete [](void* block, const char*, int)
+void operator delete[](void *block, const char *, int)
 {
    vlddelete(block);
 }
@@ -147,10 +148,10 @@ void operator delete [](void* block, const char*, int)
 //    If the memory allocation succeeds, a pointer to the allocated memory
 //    block is returned. If the allocation fails, NULL is returned.
 //
-void* vldnew(size_t size, const char* file, int line)
+void *vldnew(size_t size, const char *file, int line)
 {
-   vldblockheader_t* header = (vldblockheader_t*)RtlAllocateHeap(g_vldHeap, 0x0, size + sizeof(vldblockheader_t));
-   static SIZE_T     serialnumber = 0;
+   vldblockheader_t *header   = (vldblockheader_t *)RtlAllocateHeap(g_vldHeap, 0x0, size + sizeof(vldblockheader_t));
+   static SIZE_T serialnumber = 0;
 
    if (header == NULL) {
       // Out of memory.
@@ -158,10 +159,10 @@ void* vldnew(size_t size, const char* file, int line)
    }
 
    // Fill in the block's header information.
-   header->file = file;
-   header->line = line;
+   header->file         = file;
+   header->line         = line;
    header->serialNumber = serialnumber++;
-   header->size = size;
+   header->size         = size;
 
    // Link the block into the block list.
    CriticalSectionLocker<> cs(g_vldHeapLock);
@@ -169,11 +170,11 @@ void* vldnew(size_t size, const char* file, int line)
    if (header->next != NULL) {
       header->next->prev = header;
    }
-   header->prev = NULL;
+   header->prev   = NULL;
    g_vldBlockList = header;
 
    // Return a pointer to the beginning of the data section of the block.
-   return (void*)VLDBLOCKDATA(header);
+   return (void *)VLDBLOCKDATA(header);
 }
 
 // vlddelete - Local helper function that actually frees memory back to VLD's
@@ -185,20 +186,19 @@ void* vldnew(size_t size, const char* file, int line)
 //
 //    None.
 //
-void vlddelete(void* block)
+void vlddelete(void *block)
 {
    if (block == NULL)
       return;
 
-   BOOL              freed;
-   vldblockheader_t* header = VLDBLOCKHEADER((LPVOID)block);
+   BOOL freed;
+   vldblockheader_t *header = VLDBLOCKHEADER((LPVOID)block);
 
    // Unlink the block from the block list.
    CriticalSectionLocker<> cs(g_vldHeapLock);
    if (header->prev) {
       header->prev->next = header->next;
-   }
-   else {
+   } else {
       g_vldBlockList = header->next;
    }
 

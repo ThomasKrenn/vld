@@ -1,9 +1,10 @@
 /***********************************************************************
 * Visual Leak Detector - VisualLeakDetector Class Implementation
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
 *
+* Copyright (c) 2005-2014 VLD Team
+
 * This file is part of VLD.
 *
 * VLD is free software. You can redistribute it and/or
@@ -24,19 +25,19 @@
 
 #include <sys/stat.h>
 
-#define VLDBUILD         // Declares that we are building Visual Leak Detector.
-#include "callstack.h"   // Provides a class for handling call stacks.
-#include "crtmfcpatch.h" // Provides CRT and MFC patch functions.
-#include "map.h"         // Provides a lightweight STL-like map template.
-#include "ntapi.h"       // Provides access to NT APIs.
-#include "set.h"         // Provides a lightweight STL-like set template.
-#include "utility.h"     // Provides various utility functions.
-#include "vldheap.h"     // Provides internal new and delete operators.
-#include "vldint.h"      // Provides access to the Visual Leak Detector internals.
+#define VLDBUILD              // Declares that we are building Visual Leak Detector.
+#include "callstack.h"        // Provides a class for handling call stacks.
+#include "crtmfcpatch.h"      // Provides CRT and MFC patch functions.
+#include "map.h"              // Provides a lightweight STL-like map template.
+#include "ntapi.h"            // Provides access to NT APIs.
+#include "set.h"              // Provides a lightweight STL-like set template.
+#include "utility.h"          // Provides various utility functions.
+#include "vldheap.h"          // Provides internal new and delete operators.
+#include "vldint.h"           // Provides access to the Visual Leak Detector internals.
 #include "loaderlock.h"
 
-extern HANDLE           g_currentProcess;
-extern CriticalSection  g_heapMapLock;
+extern HANDLE g_currentProcess;
+extern CriticalSection g_heapMapLock;
 extern DbgHelp g_DbgHelp;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -64,8 +65,7 @@ HANDLE VisualLeakDetector::_GetProcessHeap()
 
    CriticalSectionLocker<> cs(g_heapMapLock);
    HeapMap::Iterator heapit = g_vld.m_heapMap->find(heap);
-   if (heapit == g_vld.m_heapMap->end())
-   {
+   if (heapit == g_vld.m_heapMap->end()) {
       g_vld.mapHeap(heap);
       heapit = g_vld.m_heapMap->find(heap);
    }
@@ -121,7 +121,7 @@ BOOL VisualLeakDetector::_HeapDestroy(HANDLE heap)
    // from the process's address space. So, we'd better generate a leak report
    // for this heap now, while we can still read from the memory blocks
    // allocated to it.
-   if (!(g_vld.m_options & VLD_OPT_SKIP_HEAPFREE_LEAKS))
+   if (! (g_vld.m_options & VLD_OPT_SKIP_HEAPFREE_LEAKS))
       g_vld.reportHeapLeaks(heap);
 
    g_vld.unmapHeap(heap);
@@ -151,10 +151,10 @@ LPVOID VisualLeakDetector::_RtlAllocateHeap(HANDLE heap, DWORD flags, SIZE_T siz
    // Allocate the block.
    LPVOID block = RtlAllocateHeap(heap, flags, size);
 
-   if ((block == NULL) || !g_vld.enabled())
+   if ((block == NULL) || ! g_vld.enabled())
       return block;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) { // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread()) {      // skip dbghelp.dll calls
       CAPTURE_CONTEXT();
       CaptureContext cc(RtlAllocateHeap, context_);
       cc.Set(heap, block, NULL, size);
@@ -170,10 +170,10 @@ LPVOID VisualLeakDetector::_HeapAlloc(HANDLE heap, DWORD flags, SIZE_T size)
    // Allocate the block.
    LPVOID block = HeapAlloc(heap, flags, size);
 
-   if ((block == NULL) || !g_vld.enabled())
+   if ((block == NULL) || ! g_vld.enabled())
       return block;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) { // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread()) {      // skip dbghelp.dll calls
       CAPTURE_CONTEXT();
       CaptureContext cc(HeapAlloc, context_);
       cc.Set(heap, block, NULL, size);
@@ -202,7 +202,7 @@ BYTE VisualLeakDetector::_RtlFreeHeap(HANDLE heap, DWORD flags, LPVOID mem)
    PRINT_HOOKED_FUNCTION2();
    BYTE status;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread())      // skip dbghelp.dll calls
    {
       // Record the current frame pointer.
       CAPTURE_CONTEXT();
@@ -223,7 +223,7 @@ BOOL VisualLeakDetector::_HeapFree(HANDLE heap, DWORD flags, LPVOID mem)
    PRINT_HOOKED_FUNCTION2();
    BOOL status;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread())      // skip dbghelp.dll calls
    {
       // Record the current frame pointer.
       CAPTURE_CONTEXT();
@@ -264,10 +264,10 @@ LPVOID VisualLeakDetector::_RtlReAllocateHeap(HANDLE heap, DWORD flags, LPVOID m
 
    // Reallocate the block.
    LPVOID newmem = RtlReAllocateHeap(heap, flags, mem, size);
-   if ((newmem == NULL) || !g_vld.enabled())
+   if ((newmem == NULL) || ! g_vld.enabled())
       return newmem;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) { // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread()) {      // skip dbghelp.dll calls
       CAPTURE_CONTEXT();
       CaptureContext cc(RtlReAllocateHeap, context_);
       cc.Set(heap, mem, newmem, size);
@@ -283,10 +283,10 @@ LPVOID VisualLeakDetector::_HeapReAlloc(HANDLE heap, DWORD flags, LPVOID mem, SI
 
    // Reallocate the block.
    LPVOID newmem = HeapReAlloc(heap, flags, mem, size);
-   if ((newmem == NULL) || !g_vld.enabled())
+   if ((newmem == NULL) || ! g_vld.enabled())
       return newmem;
 
-   if (!g_DbgHelp.IsLockedByCurrentThread()) { // skip dbghelp.dll calls
+   if (! g_DbgHelp.IsLockedByCurrentThread()) {      // skip dbghelp.dll calls
       CAPTURE_CONTEXT();
       CaptureContext cc(HeapReAlloc, context_);
       cc.Set(heap, mem, newmem, size);
@@ -317,7 +317,7 @@ LPVOID VisualLeakDetector::_HeapReAlloc(HANDLE heap, DWORD flags, LPVOID mem, SI
 //
 //    Always returns S_OK.
 //
-HRESULT VisualLeakDetector::_CoGetMalloc(DWORD context, LPMALLOC* imalloc)
+HRESULT VisualLeakDetector::_CoGetMalloc(DWORD context, LPMALLOC *imalloc)
 {
    PRINT_HOOKED_FUNCTION();
    static CoGetMalloc_t pCoGetMalloc = NULL;
@@ -332,21 +332,18 @@ HRESULT VisualLeakDetector::_CoGetMalloc(DWORD context, LPMALLOC* imalloc)
       // This is the first call to this function. Link to the real
       // CoGetMalloc and get a pointer to the system implementation of the
       // IMalloc interface.
-      ole32 = GetModuleHandleW(L"ole32.dll");
+      ole32        = GetModuleHandleW(L"ole32.dll");
       pCoGetMalloc = (CoGetMalloc_t)g_vld._RGetProcAddress(ole32, "CoGetMalloc");
-      hr = pCoGetMalloc(context, &g_vld.m_iMalloc);
+      hr           = pCoGetMalloc(context, &g_vld.m_iMalloc);
 
       // Increment the library reference count to defer unloading the library,
       // since a call to CoGetMalloc returns the global pointer to the VisualLeakDetector object.
       HMODULE module = NULL;
       GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)g_vld.m_vldBase, &module);
-   }
-   else
-   {
+   } else {
       // wait for different thread initialization
       int c = 0;
-      while (g_vld.m_iMalloc == NULL && c < 10)
-      {
+      while (g_vld.m_iMalloc == NULL && c < 10) {
          Sleep(1);
          c++;
       }
@@ -379,12 +376,12 @@ LPVOID VisualLeakDetector::_CoTaskMemAlloc(SIZE_T size)
    if (pCoTaskMemAlloc == NULL) {
       // This is the first call to this function. Link to the real
       // CoTaskMemAlloc.
-      HMODULE ole32 = GetModuleHandleW(L"ole32.dll");
+      HMODULE ole32   = GetModuleHandleW(L"ole32.dll");
       pCoTaskMemAlloc = (CoTaskMemAlloc_t)g_vld._RGetProcAddress(ole32, "CoTaskMemAlloc");
    }
 
    CAPTURE_CONTEXT();
-   CaptureContext cc((void*)pCoTaskMemAlloc, context_);
+   CaptureContext cc((void *)pCoTaskMemAlloc, context_);
 
    // Do the allocation. The block will be mapped by _RtlAllocateHeap.
    return pCoTaskMemAlloc(size);
@@ -411,12 +408,12 @@ LPVOID VisualLeakDetector::_CoTaskMemRealloc(LPVOID mem, SIZE_T size)
    if (pCoTaskMemRealloc == NULL) {
       // This is the first call to this function. Link to the real
       // CoTaskMemRealloc.
-      HMODULE ole32 = GetModuleHandleW(L"ole32.dll");
+      HMODULE ole32     = GetModuleHandleW(L"ole32.dll");
       pCoTaskMemRealloc = (CoTaskMemRealloc_t)g_vld._RGetProcAddress(ole32, "CoTaskMemRealloc");
    }
 
    CAPTURE_CONTEXT();
-   CaptureContext cc((void*)pCoTaskMemRealloc, context_);
+   CaptureContext cc((void *)pCoTaskMemRealloc, context_);
 
    // Do the allocation. The block will be mapped by _RtlReAllocateHeap.
    return pCoTaskMemRealloc(mem, size);
@@ -463,10 +460,10 @@ ULONG VisualLeakDetector::AddRef()
 LPVOID VisualLeakDetector::Alloc(_In_ SIZE_T size)
 {
    PRINT_HOOKED_FUNCTION();
-   UINT_PTR* cVtablePtr = (UINT_PTR*)((UINT_PTR*)m_iMalloc)[0];
+   UINT_PTR *cVtablePtr  = (UINT_PTR *)((UINT_PTR *)m_iMalloc)[0];
    UINT_PTR iMallocAlloc = cVtablePtr[3];
    CAPTURE_CONTEXT();
-   CaptureContext cc((void*)iMallocAlloc, context_);
+   CaptureContext cc((void *)iMallocAlloc, context_);
 
    // Do the allocation. The block will be mapped by _RtlAllocateHeap.
    assert(m_iMalloc != NULL);
@@ -503,7 +500,8 @@ VOID VisualLeakDetector::Free(_In_opt_ LPVOID mem)
 {
    PRINT_HOOKED_FUNCTION();
    assert(m_iMalloc != NULL);
-   if (m_iMalloc) m_iMalloc->Free(mem);
+   if (m_iMalloc)
+      m_iMalloc->Free(mem);
 }
 
 // GetSize - Calls to IMalloc::GetSize will end up here. This function is just a
@@ -534,7 +532,8 @@ VOID VisualLeakDetector::HeapMinimize()
 {
    PRINT_HOOKED_FUNCTION();
    assert(m_iMalloc != NULL);
-   if (m_iMalloc) m_iMalloc->HeapMinimize();
+   if (m_iMalloc)
+      m_iMalloc->HeapMinimize();
 }
 
 // QueryInterface - Calls to IMalloc::QueryInterface will end up here. This
@@ -551,7 +550,7 @@ VOID VisualLeakDetector::HeapMinimize()
 //    Returns the value returned by the system implementation of
 //    IMalloc::QueryInterface.
 //
-HRESULT VisualLeakDetector::QueryInterface(REFIID iid, LPVOID* object)
+HRESULT VisualLeakDetector::QueryInterface(REFIID iid, LPVOID *object)
 {
    PRINT_HOOKED_FUNCTION();
    assert(m_iMalloc != NULL);
@@ -575,10 +574,10 @@ HRESULT VisualLeakDetector::QueryInterface(REFIID iid, LPVOID* object)
 LPVOID VisualLeakDetector::Realloc(_In_opt_ LPVOID mem, _In_ SIZE_T size)
 {
    PRINT_HOOKED_FUNCTION();
-   UINT_PTR* cVtablePtr = (UINT_PTR*)((UINT_PTR*)m_iMalloc)[0];
+   UINT_PTR *cVtablePtr    = (UINT_PTR *)((UINT_PTR *)m_iMalloc)[0];
    UINT_PTR iMallocRealloc = cVtablePtr[4];
    CAPTURE_CONTEXT();
-   CaptureContext cc((void*)iMallocRealloc, context_);
+   CaptureContext cc((void *)iMallocRealloc, context_);
 
    // Do the allocation. The block will be mapped by _RtlReAllocateHeap.
    assert(m_iMalloc != NULL);

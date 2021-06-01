@@ -1,8 +1,9 @@
 /***********************************************************************
 * Visual Leak Detector - Various Utility Functions
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
+*
+* Copyright (c) 2005-2014 VLD Team
 *
 * This file is part of VLD.
 *
@@ -18,11 +19,10 @@
 *
 ***********************************************************************/
 
-
 #include "stdafx.h"
-#define VLDBUILD        // Declares that we are building Visual Leak Detector.
-#include "utility.h"    // Provides various utility functions and macros.
-#include "vldheap.h"    // Provides internal new and delete operators.
+#define VLDBUILD          // Declares that we are building Visual Leak Detector.
+#include "utility.h"      // Provides various utility functions and macros.
+#include "vldheap.h"      // Provides internal new and delete operators.
 #include "vldint.h"
 #include <tchar.h>
 #include <string.h>
@@ -31,16 +31,16 @@
 //#define PRINTHOOKINFO
 
 // Imported Global Variables
-extern ReportHookSet* g_pReportHooks;
+extern ReportHookSet *g_pReportHooks;
 extern VisualLeakDetector g_vld;
 extern ImageDirectoryEntries g_Ide;
 
 // Global variables.
-static BOOL         s_reportDelay = FALSE;     // If TRUE, we sleep for a bit after calling OutputDebugString to give the debugger time to catch up.
-static FILE* s_reportFile = NULL;       // Pointer to the file, if any, to send the memory leak report to.
-static BOOL         s_reportToDebugger = TRUE; // If TRUE, a copy of the memory leak report will be sent to the debugger for display.
-static BOOL         s_reportToStdOut = FALSE;   // If TRUE, a copy of the memory leak report will be sent to standard output.
-static encoding_e   s_reportEncoding = ascii;  // Output encoding of the memory leak report.
+static BOOL s_reportDelay          = FALSE;      // If TRUE, we sleep for a bit after calling OutputDebugString to give the debugger time to catch up.
+static FILE *s_reportFile          = NULL;       // Pointer to the file, if any, to send the memory leak report to.
+static BOOL s_reportToDebugger     = TRUE;       // If TRUE, a copy of the memory leak report will be sent to the debugger for display.
+static BOOL s_reportToStdOut       = FALSE;      // If TRUE, a copy of the memory leak report will be sent to standard output.
+static encoding_e s_reportEncoding = ascii;      // Output encoding of the memory leak report.
 
 #define IS_ORDINAL(name) (((UINT_PTR)name & 0xFFFF) == ((UINT_PTR)name))
 
@@ -63,22 +63,21 @@ VOID DumpMemoryA(LPCVOID address, SIZE_T size)
    if ((size % 16) == 0) {
       // No padding needed.
       dumpLen = size;
-   }
-   else {
+   } else {
       // We'll need to pad the last line out to 16 bytes.
       dumpLen = size + (16 - (size % 16));
    }
 
    // For each byte of data, get both the ASCII equivalent (if it is a
    // printable character) and the hex representation.
-   SIZE_T bytesDone = 0;
-   WCHAR  hexDump[HEXDUMPLINELENGTH] = { 0 };
-   WCHAR  ascDump[18] = { 0 };
-   WCHAR  formatBuf[BYTEFORMATBUFFERLENGTH];
+   SIZE_T bytesDone                 = 0;
+   WCHAR hexDump[HEXDUMPLINELENGTH] = {0};
+   WCHAR ascDump[18]                = {0};
+   WCHAR formatBuf[BYTEFORMATBUFFERLENGTH];
    for (SIZE_T byteIndex = 0; byteIndex < dumpLen; byteIndex++) {
       SIZE_T wordIndex = byteIndex % 16;
-      SIZE_T hexIndex = 3 * (wordIndex + (wordIndex / 4)); // 3 characters per byte, plus a 3-character space after every 4 bytes.
-      SIZE_T ascIndex = wordIndex + wordIndex / 8;         // 1 character per byte, plus a 1-character space after every 8 bytes.
+      SIZE_T hexIndex  = 3 * (wordIndex + (wordIndex / 4));      // 3 characters per byte, plus a 3-character space after every 4 bytes.
+      SIZE_T ascIndex  = wordIndex + wordIndex / 8;              // 1 character per byte, plus a 1-character space after every 8 bytes.
       if (byteIndex < size) {
          BYTE byte = ((PBYTE)address)[byteIndex];
          _snwprintf_s(formatBuf, BYTEFORMATBUFFERLENGTH, _TRUNCATE, L"%.2X ", byte);
@@ -86,12 +85,10 @@ VOID DumpMemoryA(LPCVOID address, SIZE_T size)
          wcsncpy_s(hexDump + hexIndex, HEXDUMPLINELENGTH - hexIndex, formatBuf, 4);
          if (isgraph(byte)) {
             ascDump[ascIndex] = (WCHAR)byte;
-         }
-         else {
+         } else {
             ascDump[ascIndex] = L'.';
          }
-      }
-      else {
+      } else {
          // Add padding to fill out the last line to 16 bytes.
          wcsncpy_s(hexDump + hexIndex, HEXDUMPLINELENGTH - hexIndex, L"   ", 4);
          ascDump[ascIndex] = L'.';
@@ -101,8 +98,7 @@ VOID DumpMemoryA(LPCVOID address, SIZE_T size)
          // Print one line of data for every 16 bytes. Include the
          // ASCII dump and the hex dump side-by-side.
          Report(L"    %s    %s\n", hexDump, ascDump);
-      }
-      else {
+      } else {
          if ((bytesDone % 8) == 0) {
             // Add a spacer in the ASCII dump after every 8 bytes.
             ascDump[ascIndex + 1] = L' ';
@@ -133,21 +129,20 @@ VOID DumpMemoryW(LPCVOID address, SIZE_T size)
    if ((size % 16) == 0) {
       // No padding needed.
       dumpLen = size;
-   }
-   else {
+   } else {
       // We'll need to pad the last line out to 16 bytes.
       dumpLen = size + (16 - (size % 16));
    }
 
    // For each word of data, get both the Unicode equivalent and the hex
    // representation.
-   WCHAR  formatBuf[BYTEFORMATBUFFERLENGTH];
-   WCHAR  hexDump[HEXDUMPLINELENGTH] = { 0 };
-   WCHAR  unidump[18] = { 0 };
-   SIZE_T bytesDone = 0;
+   WCHAR formatBuf[BYTEFORMATBUFFERLENGTH];
+   WCHAR hexDump[HEXDUMPLINELENGTH] = {0};
+   WCHAR unidump[18]                = {0};
+   SIZE_T bytesDone                 = 0;
    for (SIZE_T byteIndex = 0; byteIndex < dumpLen; byteIndex++) {
-      SIZE_T hexIndex = 3 * ((byteIndex % 16) + ((byteIndex % 16) / 4));   // 3 characters per byte, plus a 3-character space after every 4 bytes.
-      SIZE_T uniIndex = ((byteIndex / 2) % 8) + ((byteIndex / 2) % 8) / 8; // 1 character every other byte, plus a 1-character space after every 8 bytes.
+      SIZE_T hexIndex = 3 * ((byteIndex % 16) + ((byteIndex % 16) / 4));        // 3 characters per byte, plus a 3-character space after every 4 bytes.
+      SIZE_T uniIndex = ((byteIndex / 2) % 8) + ((byteIndex / 2) % 8) / 8;      // 1 character every other byte, plus a 1-character space after every 8 bytes.
       if (byteIndex < size) {
          BYTE byte = ((PBYTE)address)[byteIndex];
          _snwprintf_s(formatBuf, BYTEFORMATBUFFERLENGTH, _TRUNCATE, L"%.2X ", byte);
@@ -155,16 +150,14 @@ VOID DumpMemoryW(LPCVOID address, SIZE_T size)
          wcsncpy_s(hexDump + hexIndex, HEXDUMPLINELENGTH - hexIndex, formatBuf, 4);
          if (((byteIndex % 2) == 0) && ((byteIndex + 1) < dumpLen)) {
             // On every even byte, print one character.
-            WORD   word = ((PWORD)address)[byteIndex / 2];
+            WORD word = ((PWORD)address)[byteIndex / 2];
             if ((word == 0x0000) || (word == 0x0020)) {
                unidump[uniIndex] = L'.';
-            }
-            else {
+            } else {
                unidump[uniIndex] = word;
             }
          }
-      }
-      else {
+      } else {
          // Add padding to fill out the last line to 16 bytes.
          wcsncpy_s(hexDump + hexIndex, HEXDUMPLINELENGTH - hexIndex, L"   ", 4);
          unidump[uniIndex] = L'.';
@@ -174,8 +167,7 @@ VOID DumpMemoryW(LPCVOID address, SIZE_T size)
          // Print one line of data for every 16 bytes. Include the
          // ASCII dump and the hex dump side-by-side.
          Report(L"    %s    %s\n", hexDump, unidump);
-      }
-      else {
+      } else {
          if ((bytesDone % 8) == 0) {
             // Add a spacer in the ASCII dump after every 8 bytes.
             unidump[uniIndex + 1] = L' ';
@@ -194,12 +186,6 @@ DWORD FilterFunction(long)
    return EXCEPTION_CONTINUE_SEARCH;
 }
 
-
-
-
-
-
-
 // InsertReportDelay - Sets the report function to sleep for a bit after each
 //   call to OutputDebugString, in order to allow the debugger to catch up.
 //
@@ -213,19 +199,18 @@ VOID InsertReportDelay()
 }
 
 // ConvertModulePathToAscii - Convert module path to ascii encoding.
-void ConvertModulePathToAscii(LPCWSTR modulename, LPSTR* modulenamea)
+void ConvertModulePathToAscii(LPCWSTR modulename, LPSTR *modulenamea)
 {
    size_t length = ::WideCharToMultiByte(CP_ACP, 0, modulename, -1, 0, 0, 0, 0);
-   *modulenamea = new CHAR[length];
+   *modulenamea  = new CHAR[length];
 
    // wcstombs_s requires locale to be already set up correctly, but it might not be correct on vld init step. So use WideCharToMultiByte instead
-   CHAR defaultChar = '?';
+   CHAR defaultChar     = '?';
    BOOL defaultCharUsed = FALSE;
 
-   int count = ::WideCharToMultiByte(CP_ACP, 0/*flags*/, modulename, (int)-1, *modulenamea, (int)length, &defaultChar, &defaultCharUsed);
+   int count = ::WideCharToMultiByte(CP_ACP, 0 /*flags*/, modulename, (int)-1, *modulenamea, (int)length, &defaultChar, &defaultCharUsed);
    assert(count != 0);
-   if (defaultCharUsed)
-   {
+   if (defaultCharUsed) {
       ::OutputDebugStringW(__FILEW__ L": " __FUNCTIONW__ L" - defaultChar was used while conversion from \"");
       ::OutputDebugStringW(modulename);
       ::OutputDebugStringW(L"\" to ANSI \"");
@@ -234,33 +219,30 @@ void ConvertModulePathToAscii(LPCWSTR modulename, LPSTR* modulenamea)
    }
 }
 
-
-
 LPVOID FindRealCode(LPVOID pCode)
 {
    LPVOID result = pCode;
-   if (pCode != NULL)
-   {
-      if (*(WORD*)pCode == 0x25ff) // JMP r/m32
+   if (pCode != NULL) {
+      if (*(WORD *)pCode == 0x25ff)      // JMP r/m32
       {
 #ifdef _WIN64
-         LONG offset = *((LONG*)((ULONG_PTR)pCode + 2));
+         LONG offset = *((LONG *)((ULONG_PTR)pCode + 2));
          // RIP relative addressing
          PBYTE pNextInst = (PBYTE)((ULONG_PTR)pCode + 6);
-         pCode = *(LPVOID*)(pNextInst + offset);
+         pCode           = *(LPVOID *)(pNextInst + offset);
          return pCode;
 #else
-         DWORD addr = *((DWORD*)((ULONG_PTR)pCode + 2));
-         pCode = *(LPVOID*)(addr);
+         DWORD addr = *((DWORD *)((ULONG_PTR)pCode + 2));
+         pCode      = *(LPVOID *)(addr);
          return FindRealCode(pCode);
 #endif
       }
-      if (*(BYTE*)pCode == 0xE9) // JMP rel32
+      if (*(BYTE *)pCode == 0xE9)      // JMP rel32
       {
          // Relative next instruction
-         PBYTE	pNextInst = (PBYTE)((ULONG_PTR)pCode + 5);
-         LONG	offset = *((LONG*)((ULONG_PTR)pCode + 1));
-         pCode = (LPVOID*)(pNextInst + offset);
+         PBYTE pNextInst = (PBYTE)((ULONG_PTR)pCode + 5);
+         LONG offset     = *((LONG *)((ULONG_PTR)pCode + 1));
+         pCode           = (LPVOID *)(pNextInst + offset);
          return FindRealCode(pCode);
       }
    }
@@ -297,35 +279,35 @@ LPVOID FindRealCode(LPVOID pCode)
 //    import module does not import the specified export, so nothing changed,
 //    then FALSE will be returned.
 //
-BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
+BOOL PatchImport(HMODULE importmodule, moduleentry_t *patchModule)
 {
    HMODULE exportmodule = (HMODULE)patchModule->moduleBase;
    if (exportmodule == NULL)
       return FALSE;
 
-   IMAGE_IMPORT_DESCRIPTOR* idte = NULL;
-   IMAGE_SECTION_HEADER* section = NULL;
-   ULONG                    size = 0;
+   IMAGE_IMPORT_DESCRIPTOR *idte = NULL;
+   IMAGE_SECTION_HEADER *section = NULL;
+   ULONG size                    = 0;
 
    // Locate the importing module's Import Directory Table (IDT) entry for the
    // exporting module. The importing module actually can have several IATs --
    // one for each export module that it imports something from. The IDT entry
    // gives us the offset of the IAT for the module we are interested in.
    {
-      idte = (IMAGE_IMPORT_DESCRIPTOR*)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
+      idte = (IMAGE_IMPORT_DESCRIPTOR *)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
          IMAGE_DIRECTORY_ENTRY_IMPORT, &size, &section);
    }
 
-   if (idte == NULL) {
+   if ((idte == NULL) || (idte->OriginalFirstThunk == 0)) {
       // This module has no IDT (i.e. it imports nothing).
       return FALSE;
    }
 #ifdef PRINTHOOKINFO
    bool dllNamePrinted = false;
-   CHAR  cwBuffer[2048] = { 0 };
-   LPSTR pszBuffer = cwBuffer;
-   DWORD dwMaxChars = _countof(cwBuffer);
-   DWORD dwLength = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
+   CHAR cwBuffer[2048] = {0};
+   LPSTR pszBuffer     = cwBuffer;
+   DWORD dwMaxChars    = _countof(cwBuffer);
+   DWORD dwLength      = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
 #endif
 
    int result = 0;
@@ -333,41 +315,38 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
       PCHAR importdllname = (PCHAR)R2VA(importmodule, idte->Name);
       UNREFERENCED_PARAMETER(importdllname);
 
-      patchentry_t* patchEntry = patchModule->patchTable;
-      int i = 0;
-      while (patchEntry->importName)
-      {
-         LPCSTR importname = patchEntry->importName;
+      patchentry_t *patchEntry = patchModule->patchTable;
+      int i                    = 0;
+      while (patchEntry->importName) {
+         LPCSTR importname   = patchEntry->importName;
          LPCVOID replacement = patchEntry->replacement;
 
          // Get the *real* address of the import. If we find this address in the IAT,
          // then we've found the entry that needs to be patched.
          LPVOID import = VisualLeakDetector::_RGetProcAddress(exportmodule, importname);
-         if (!import)
+         if (! import)
             import = GetProcAddress(exportmodule, importname);
          import = FindRealCode(import);
 
-         if (import == NULL) // Perhaps the named export module does not actually export the named import?
+         if (import == NULL)      // Perhaps the named export module does not actually export the named import?
          {
-            patchEntry++; i++;
+            patchEntry++;
+            i++;
             continue;
          }
 
          // Locate the import's IAT entry.
-         IMAGE_THUNK_DATA* thunk = (IMAGE_THUNK_DATA*)R2VA(importmodule, idte->FirstThunk);
-         IMAGE_THUNK_DATA* origThunk = (IMAGE_THUNK_DATA*)R2VA(importmodule, idte->OriginalFirstThunk);
+         IMAGE_THUNK_DATA *thunk     = (IMAGE_THUNK_DATA *)R2VA(importmodule, idte->FirstThunk);
+         IMAGE_THUNK_DATA *origThunk = (IMAGE_THUNK_DATA *)R2VA(importmodule, idte->OriginalFirstThunk);
          for (; origThunk->u1.Function != NULL;
-            origThunk++, thunk++)
-         {
+              origThunk++, thunk++) {
             LPVOID func = FindRealCode((LPVOID)thunk->u1.Function);
-            if (((DWORD_PTR)func == (DWORD_PTR)import))
-            {
+            if (((DWORD_PTR)func == (DWORD_PTR)import)) {
                // Found the IAT entry. Overwrite the address stored in the IAT
                // entry with the address of the replacement. Note that the IAT
                // entry may be write-protected, so we must first ensure that it is
                // writable.
-               if (import != replacement)
-               {
+               if (import != replacement) {
                   if (patchEntry->original != NULL)
                      *patchEntry->original = func;
 
@@ -376,11 +355,10 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
                      thunk->u1.Function = (DWORD_PTR)replacement;
                      if (VirtualProtect(&thunk->u1.Function, sizeof(thunk->u1.Function), protect, &protect)) {
 #ifdef PRINTHOOKINFO
-                        if (!IS_ORDINAL(importname)) {
+                        if (! IS_ORDINAL(importname)) {
                            DbgReport(L"Hook dll \"%S\" import %S!%S()\n",
                               strrchr(pszBuffer, '\\') + 1, patchModule->exportModuleName, importname);
-                        }
-                        else {
+                        } else {
                            DbgReport(L"Hook dll \"%S\" import %S!%zu()\n",
                               strrchr(pszBuffer, '\\') + 1, patchModule->exportModuleName, importname);
                         }
@@ -395,13 +373,9 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
 #ifdef PRINTHOOKINFO
             PIMAGE_IMPORT_BY_NAME funcEntry = (PIMAGE_IMPORT_BY_NAME)
                R2VA(importmodule, origThunk->u1.AddressOfData);
-            if (stricmp(importdllname, patchModule->exportModuleName) == 0)
-            {
-               if (!(origThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) && !IS_ORDINAL(importname) &&
-                  strcmp(reinterpret_cast<const char*>(funcEntry->Name), importname) == 0)
-               {
-                  if (!dllNamePrinted)
-                  {
+            if (stricmp(importdllname, patchModule->exportModuleName) == 0) {
+               if (! (origThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) && ! IS_ORDINAL(importname) && strcmp(reinterpret_cast<const char *>(funcEntry->Name), importname) == 0) {
+                  if (! dllNamePrinted) {
                      dllNamePrinted = true;
                      DbgReport(L"Hook dll \"%S\":\n",
                         strrchr(pszBuffer, '\\') + 1);
@@ -410,11 +384,8 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
                      importname, patchModule->exportModuleName, importdllname);
                   break;
                }
-               if ((origThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) && IS_ORDINAL(importname) &&
-                  (IMAGE_ORDINAL(origThunk->u1.Ordinal) == (UINT_PTR)importname))
-               {
-                  if (!dllNamePrinted)
-                  {
+               if ((origThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG) && IS_ORDINAL(importname) && (IMAGE_ORDINAL(origThunk->u1.Ordinal) == (UINT_PTR)importname)) {
+                  if (! dllNamePrinted) {
                      dllNamePrinted = true;
                      DbgReport(L"Hook dll \"%S\":\n",
                         strrchr(pszBuffer, '\\') + 1);
@@ -426,7 +397,8 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
             }
 #endif
          }
-         patchEntry++; i++;
+         patchEntry++;
+         i++;
       }
 
       idte++;
@@ -459,15 +431,15 @@ BOOL PatchImport(HMODULE importmodule, moduleentry_t* patchModule)
 //
 BOOL PatchModule(HMODULE importmodule, moduleentry_t patchtable[], UINT tablesize)
 {
-   moduleentry_t* entry;
-   UINT          index;
-   BOOL          patched = FALSE;
+   moduleentry_t *entry;
+   UINT index;
+   BOOL patched = FALSE;
 
 #ifdef PRINTHOOKINFO
-   CHAR  cwBuffer[2048] = { 0 };
-   LPSTR pszBuffer = cwBuffer;
-   DWORD dwMaxChars = _countof(cwBuffer);
-   DWORD dwLength = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
+   CHAR cwBuffer[2048] = {0};
+   LPSTR pszBuffer     = cwBuffer;
+   DWORD dwMaxChars    = _countof(cwBuffer);
+   DWORD dwLength      = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
 #endif
 
    // Loop through the import patch table, individually patching each import
@@ -483,14 +455,13 @@ BOOL PatchModule(HMODULE importmodule, moduleentry_t patchtable[], UINT tablesiz
    return patched;
 }
 
-int CallReportHook(int reportType, LPWSTR message, int* hook_retval)
+int CallReportHook(int reportType, LPWSTR message, int *hook_retval)
 {
    if (g_pReportHooks == NULL)
       return 0;
-   for (ReportHookSet::Iterator it = g_pReportHooks->begin(); it != g_pReportHooks->end(); ++it)
-   {
+   for (ReportHookSet::Iterator it = g_pReportHooks->begin(); it != g_pReportHooks->end(); ++it) {
       int result = (*it)(reportType, message, hook_retval);
-      if (result) // handled
+      if (result)      // handled
          return result;
    }
    return 0;
@@ -514,8 +485,7 @@ VOID Print(LPWSTR messagew)
       return;
 
    int hook_retval = 0;
-   if (!CallReportHook(0, messagew, &hook_retval))
-   {
+   if (! CallReportHook(0, messagew, &hook_retval)) {
       if (s_reportEncoding == unicode) {
          if (s_reportFile != NULL) {
             // Send the report to the previously specified file.
@@ -524,15 +494,15 @@ VOID Print(LPWSTR messagew)
 
          if (s_reportToStdOut)
             fputws(messagew, stdout);
-      }
-      else {
+      } else {
          const size_t MAXMESSAGELENGTH = 8119;
-         size_t  count = 0;
-         CHAR    messagea[MAXMESSAGELENGTH + 1];
-         if (wcstombs_s(&count, messagea, MAXMESSAGELENGTH + 1, messagew, _TRUNCATE) != 0) {
+         size_t count                  = 0;
+         CHAR messagea[MAXMESSAGELENGTH + 1];
+         errno_t ret = wcstombs_s(&count, messagea, MAXMESSAGELENGTH + 1, messagew, _TRUNCATE);
+         if (ret != 0 && ret != STRUNCATE) {
             // Failed to convert the Unicode message to ASCII.
-            //assert(FALSE);
-            //return;
+            assert(FALSE);
+            return;
          }
          messagea[MAXMESSAGELENGTH] = '\0';
 
@@ -547,12 +517,11 @@ VOID Print(LPWSTR messagew)
 
       if (s_reportToDebugger)
          OutputDebugStringW(messagew);
-   }
-   else if (hook_retval == 1)
+   } else if (hook_retval == 1)
       __debugbreak();
 
    if (s_reportToDebugger && (s_reportDelay)) {
-      Sleep(10); // Workaround the Visual Studio 6 bug where debug strings are sometimes lost if they're sent too fast.
+      Sleep(10);      // Workaround the Visual Studio 6 bug where debug strings are sometimes lost if they're sent too fast.
    }
 }
 
@@ -574,7 +543,7 @@ VOID Print(LPWSTR messagew)
 VOID Report(LPCWSTR format, ...)
 {
    va_list args;
-   WCHAR   messagew[MAXREPORTLENGTH + 1];
+   WCHAR messagew[MAXREPORTLENGTH + 1];
 
    va_start(args, format);
    int result = _vsnwprintf_s(messagew, MAXREPORTLENGTH + 1, _TRUNCATE, format, args);
@@ -609,24 +578,24 @@ VOID Report(LPCWSTR format, ...)
 //
 //    None.
 //
-VOID RestoreImport(HMODULE importmodule, moduleentry_t* module)
+VOID RestoreImport(HMODULE importmodule, moduleentry_t *module)
 {
-   HMODULE exportmodule = (HMODULE)module->moduleBase;
+   HMODULE exportmodule    = (HMODULE)module->moduleBase;
    LPCSTR exportmodulename = module->exportModuleName;
    UNREFERENCED_PARAMETER(exportmodulename);
    if (exportmodule == NULL)
       return;
 
-   IMAGE_IMPORT_DESCRIPTOR* idte = NULL;
-   IMAGE_SECTION_HEADER* section = NULL;
-   ULONG                    size = 0;
+   IMAGE_IMPORT_DESCRIPTOR *idte = NULL;
+   IMAGE_SECTION_HEADER *section = NULL;
+   ULONG size                    = 0;
 
    // Locate the importing module's Import Directory Table (IDT) entry for the
    // exporting module. The importing module actually can have several IATs --
    // one for each export module that it imports something from. The IDT entry
    // gives us the offset of the IAT for the module we are interested in.
    {
-      idte = (IMAGE_IMPORT_DESCRIPTOR*)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
+      idte = (IMAGE_IMPORT_DESCRIPTOR *)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
          IMAGE_DIRECTORY_ENTRY_IMPORT, &size, &section);
    }
 
@@ -637,48 +606,44 @@ VOID RestoreImport(HMODULE importmodule, moduleentry_t* module)
 
 #ifdef PRINTHOOKINFO
    bool dllNamePrinted = false;
-   CHAR  cwBuffer[2048] = { 0 };
-   LPSTR pszBuffer = cwBuffer;
-   DWORD dwMaxChars = _countof(cwBuffer);
-   DWORD dwLength = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
+   CHAR cwBuffer[2048] = {0};
+   LPSTR pszBuffer     = cwBuffer;
+   DWORD dwMaxChars    = _countof(cwBuffer);
+   DWORD dwLength      = ::GetModuleFileNameA(importmodule, pszBuffer, dwMaxChars);
 #endif
 
    int result = 0;
-   while (idte->OriginalFirstThunk != 0x0)
-   {
+   while (idte->OriginalFirstThunk != 0x0) {
       PCHAR name = (PCHAR)R2VA(importmodule, idte->Name);
       UNREFERENCED_PARAMETER(name);
 
-      int i = 0;
-      patchentry_t* entry = module->patchTable;
-      while (entry->importName)
-      {
-         LPCSTR importname = entry->importName;
+      int i               = 0;
+      patchentry_t *entry = module->patchTable;
+      while (entry->importName) {
+         LPCSTR importname   = entry->importName;
          LPCVOID replacement = entry->replacement;
          UNREFERENCED_PARAMETER(importname);
 
          // Get the *real* address of the import.
          //LPCVOID original = entry->original;
          LPCVOID original = g_vld._RGetProcAddress(exportmodule, importname);
-         if (original == NULL) // Perhaps the named export module does not actually export the named import?
+         if (original == NULL)      // Perhaps the named export module does not actually export the named import?
          {
-            entry++; i++;
+            entry++;
+            i++;
             continue;
          }
 
          // Locate the import's original IAT entry (it currently has the replacement
          // address in it).
-         IMAGE_THUNK_DATA* iate = (IMAGE_THUNK_DATA*)R2VA(importmodule, idte->FirstThunk);
-         while (iate->u1.Function != 0x0)
-         {
-            if (iate->u1.Function != (DWORD_PTR)replacement)
-            {
+         IMAGE_THUNK_DATA *iate = (IMAGE_THUNK_DATA *)R2VA(importmodule, idte->FirstThunk);
+         while (iate->u1.Function != 0x0) {
+            if (iate->u1.Function != (DWORD_PTR)replacement) {
                iate++;
                continue;
             }
 
-            if (iate->u1.Function != (DWORD_PTR)original)
-            {
+            if (iate->u1.Function != (DWORD_PTR)original) {
                // Found the IAT entry. Overwrite the address stored in the IAT
                // entry with the import's real address. Note that the IAT entry may
                // be write-protected, so we must first ensure that it is writable.
@@ -687,11 +652,10 @@ VOID RestoreImport(HMODULE importmodule, moduleentry_t* module)
                   iate->u1.Function = (DWORD_PTR)original;
                   if (VirtualProtect(&iate->u1.Function, sizeof(iate->u1.Function), protect, &protect)) {
 #ifdef PRINTHOOKINFO
-                     if (!IS_ORDINAL(importname)) {
+                     if (! IS_ORDINAL(importname)) {
                         DbgReport(L"UnHook dll \"%S\" import %S!%S()\n",
                            strrchr(pszBuffer, '\\') + 1, module->exportModuleName, importname);
-                     }
-                     else {
+                     } else {
                         DbgReport(L"UnHook dll \"%S\" import %S!%zu()\n",
                            strrchr(pszBuffer, '\\') + 1, module->exportModuleName, importname);
                      }
@@ -702,7 +666,8 @@ VOID RestoreImport(HMODULE importmodule, moduleentry_t* module)
             result++;
             iate++;
          }
-         entry++; i++;
+         entry++;
+         i++;
       }
       idte++;
    }
@@ -728,8 +693,8 @@ VOID RestoreImport(HMODULE importmodule, moduleentry_t* module)
 //
 VOID RestoreModule(HMODULE importmodule, moduleentry_t patchtable[], UINT tablesize)
 {
-   moduleentry_t* entry;
-   UINT          index;
+   moduleentry_t *entry;
+   UINT index;
 
    // Loop through the import patch table, individually restoring each import
    // listed in the table.
@@ -777,11 +742,11 @@ VOID SetReportEncoding(encoding_e encoding)
 //
 //    None.
 //
-VOID SetReportFile(FILE* file, BOOL copydebugger, BOOL tostdout)
+VOID SetReportFile(FILE *file, BOOL copydebugger, BOOL tostdout)
 {
-   s_reportFile = file;
+   s_reportFile       = file;
    s_reportToDebugger = copydebugger;
-   s_reportToStdOut = tostdout;
+   s_reportToStdOut   = tostdout;
 }
 
 // AppendString - Appends the specified source string to the specified destination
@@ -802,11 +767,10 @@ VOID SetReportFile(FILE* file, BOOL copydebugger, BOOL tostdout)
 //
 LPWSTR AppendString(LPWSTR dest, LPCWSTR source)
 {
-   if ((source == NULL) || (source[0] == '\0'))
-   {
+   if ((source == NULL) || (source[0] == '\0')) {
       return dest;
    }
-   SIZE_T length = wcslen(dest) + wcslen(source);
+   SIZE_T length  = wcslen(dest) + wcslen(source);
    LPWSTR new_str = new WCHAR[length + 1];
    wcsncpy_s(new_str, length + 1, dest, _TRUNCATE);
    wcsncat_s(new_str, length + 1, source, _TRUNCATE);
@@ -824,16 +788,13 @@ LPWSTR AppendString(LPWSTR dest, LPCWSTR source)
 //    Returns TRUE if the string is recognized as a "true" string. Otherwise
 //    returns FALSE.
 //
-BOOL StrToBool(LPCWSTR s) {
-   WCHAR* end;
+BOOL StrToBool(LPCWSTR s)
+{
+   WCHAR *end;
 
-   if ((_wcsicmp(s, L"true") == 0) ||
-      (_wcsicmp(s, L"yes") == 0) ||
-      (_wcsicmp(s, L"on") == 0) ||
-      (wcstol(s, &end, 10) == 1)) {
+   if ((_wcsicmp(s, L"true") == 0) || (_wcsicmp(s, L"yes") == 0) || (_wcsicmp(s, L"on") == 0) || (wcstol(s, &end, 10) == 1)) {
       return TRUE;
-   }
-   else {
+   } else {
       return FALSE;
    }
 }
@@ -848,26 +809,28 @@ BOOL StrToBool(LPCWSTR s) {
 //
 DWORD _GetProcessIdOfThread(HANDLE thread)
 {
-   typedef struct _CLIENT_ID {
+   typedef struct _CLIENT_ID
+   {
       HANDLE UniqueProcess;
       HANDLE UniqueThread;
-   } CLIENT_ID, * PCLIENT_ID;
+   } CLIENT_ID, *PCLIENT_ID;
 
    typedef LONG NTSTATUS;
    typedef LONG KPRIORITY;
 
-   typedef struct _THREAD_BASIC_INFORMATION {
-      NTSTATUS  ExitStatus;
-      PVOID     TebBaseAddress;
+   typedef struct _THREAD_BASIC_INFORMATION
+   {
+      NTSTATUS ExitStatus;
+      PVOID TebBaseAddress;
       CLIENT_ID ClientId;
       KAFFINITY AffinityMask;
       KPRIORITY Priority;
       KPRIORITY BasePriority;
-   } THREAD_BASIC_INFORMATION, * PTHREAD_BASIC_INFORMATION;
+   } THREAD_BASIC_INFORMATION, *PTHREAD_BASIC_INFORMATION;
 
    const static THREADINFOCLASS ThreadBasicInformation = (THREADINFOCLASS)0;
 
-   typedef NTSTATUS(WINAPI* PNtQueryInformationThread) (HANDLE thread,
+   typedef NTSTATUS(WINAPI * PNtQueryInformationThread)(HANDLE thread,
       THREADINFOCLASS infoclass, PVOID buffer, ULONG buffersize,
       PULONG used);
 
@@ -877,8 +840,7 @@ DWORD _GetProcessIdOfThread(HANDLE thread)
    NTSTATUS status;
    if (NtQueryInformationThread == NULL) {
       HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
-      if (ntdll)
-      {
+      if (ntdll) {
          NtQueryInformationThread = (PNtQueryInformationThread)GetProcAddress(ntdll, "NtQueryInformationThread");
       }
 
@@ -897,58 +859,271 @@ DWORD _GetProcessIdOfThread(HANDLE thread)
 }
 
 static const DWORD crctab[256] = {
-    0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
-    0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
-    0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
-    0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
-    0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9,
-    0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172,
-    0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c,
-    0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
-    0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423,
-    0xcfba9599, 0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924,
-    0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190, 0x01db7106,
-    0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433,
-    0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d,
-    0x91646c97, 0xe6635c01, 0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e,
-    0x6c0695ed, 0x1b01a57b, 0x8208f4c1, 0xf50fc457, 0x65b0d9c6, 0x12b7e950,
-    0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3, 0xfbd44c65,
-    0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2, 0x4adfa541, 0x3dd895d7,
-    0xa4d1c46d, 0xd3d6f4fb, 0x4369e96a, 0x346ed9fc, 0xad678846, 0xda60b8d0,
-    0x44042d73, 0x33031de5, 0xaa0a4c5f, 0xdd0d7cc9, 0x5005713c, 0x270241aa,
-    0xbe0b1010, 0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f,
-    0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17, 0x2eb40d81,
-    0xb7bd5c3b, 0xc0ba6cad, 0xedb88320, 0x9abfb3b6, 0x03b6e20c, 0x74b1d29a,
-    0xead54739, 0x9dd277af, 0x04db2615, 0x73dc1683, 0xe3630b12, 0x94643b84,
-    0x0d6d6a3e, 0x7a6a5aa8, 0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1,
-    0xf00f9344, 0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb,
-    0x196c3671, 0x6e6b06e7, 0xfed41b76, 0x89d32be0, 0x10da7a5a, 0x67dd4acc,
-    0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5, 0xd6d6a3e8, 0xa1d1937e,
-    0x38d8c2c4, 0x4fdff252, 0xd1bb67f1, 0xa6bc5767, 0x3fb506dd, 0x48b2364b,
-    0xd80d2bda, 0xaf0a1b4c, 0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55,
-    0x316e8eef, 0x4669be79, 0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236,
-    0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f, 0xc5ba3bbe, 0xb2bd0b28,
-    0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31, 0x2cd99e8b, 0x5bdeae1d,
-    0x9b64c2b0, 0xec63f226, 0x756aa39c, 0x026d930a, 0x9c0906a9, 0xeb0e363f,
-    0x72076785, 0x05005713, 0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38,
-    0x92d28e9b, 0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21, 0x86d3d2d4, 0xf1d4e242,
-    0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1, 0x18b74777,
-    0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c, 0x8f659eff, 0xf862ae69,
-    0x616bffd3, 0x166ccf45, 0xa00ae278, 0xd70dd2ee, 0x4e048354, 0x3903b3c2,
-    0xa7672661, 0xd06016f7, 0x4969474d, 0x3e6e77db, 0xaed16a4a, 0xd9d65adc,
-    0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
-    0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693,
-    0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
-    0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
+   0x00000000,
+   0x77073096,
+   0xee0e612c,
+   0x990951ba,
+   0x076dc419,
+   0x706af48f,
+   0xe963a535,
+   0x9e6495a3,
+   0x0edb8832,
+   0x79dcb8a4,
+   0xe0d5e91e,
+   0x97d2d988,
+   0x09b64c2b,
+   0x7eb17cbd,
+   0xe7b82d07,
+   0x90bf1d91,
+   0x1db71064,
+   0x6ab020f2,
+   0xf3b97148,
+   0x84be41de,
+   0x1adad47d,
+   0x6ddde4eb,
+   0xf4d4b551,
+   0x83d385c7,
+   0x136c9856,
+   0x646ba8c0,
+   0xfd62f97a,
+   0x8a65c9ec,
+   0x14015c4f,
+   0x63066cd9,
+   0xfa0f3d63,
+   0x8d080df5,
+   0x3b6e20c8,
+   0x4c69105e,
+   0xd56041e4,
+   0xa2677172,
+   0x3c03e4d1,
+   0x4b04d447,
+   0xd20d85fd,
+   0xa50ab56b,
+   0x35b5a8fa,
+   0x42b2986c,
+   0xdbbbc9d6,
+   0xacbcf940,
+   0x32d86ce3,
+   0x45df5c75,
+   0xdcd60dcf,
+   0xabd13d59,
+   0x26d930ac,
+   0x51de003a,
+   0xc8d75180,
+   0xbfd06116,
+   0x21b4f4b5,
+   0x56b3c423,
+   0xcfba9599,
+   0xb8bda50f,
+   0x2802b89e,
+   0x5f058808,
+   0xc60cd9b2,
+   0xb10be924,
+   0x2f6f7c87,
+   0x58684c11,
+   0xc1611dab,
+   0xb6662d3d,
+   0x76dc4190,
+   0x01db7106,
+   0x98d220bc,
+   0xefd5102a,
+   0x71b18589,
+   0x06b6b51f,
+   0x9fbfe4a5,
+   0xe8b8d433,
+   0x7807c9a2,
+   0x0f00f934,
+   0x9609a88e,
+   0xe10e9818,
+   0x7f6a0dbb,
+   0x086d3d2d,
+   0x91646c97,
+   0xe6635c01,
+   0x6b6b51f4,
+   0x1c6c6162,
+   0x856530d8,
+   0xf262004e,
+   0x6c0695ed,
+   0x1b01a57b,
+   0x8208f4c1,
+   0xf50fc457,
+   0x65b0d9c6,
+   0x12b7e950,
+   0x8bbeb8ea,
+   0xfcb9887c,
+   0x62dd1ddf,
+   0x15da2d49,
+   0x8cd37cf3,
+   0xfbd44c65,
+   0x4db26158,
+   0x3ab551ce,
+   0xa3bc0074,
+   0xd4bb30e2,
+   0x4adfa541,
+   0x3dd895d7,
+   0xa4d1c46d,
+   0xd3d6f4fb,
+   0x4369e96a,
+   0x346ed9fc,
+   0xad678846,
+   0xda60b8d0,
+   0x44042d73,
+   0x33031de5,
+   0xaa0a4c5f,
+   0xdd0d7cc9,
+   0x5005713c,
+   0x270241aa,
+   0xbe0b1010,
+   0xc90c2086,
+   0x5768b525,
+   0x206f85b3,
+   0xb966d409,
+   0xce61e49f,
+   0x5edef90e,
+   0x29d9c998,
+   0xb0d09822,
+   0xc7d7a8b4,
+   0x59b33d17,
+   0x2eb40d81,
+   0xb7bd5c3b,
+   0xc0ba6cad,
+   0xedb88320,
+   0x9abfb3b6,
+   0x03b6e20c,
+   0x74b1d29a,
+   0xead54739,
+   0x9dd277af,
+   0x04db2615,
+   0x73dc1683,
+   0xe3630b12,
+   0x94643b84,
+   0x0d6d6a3e,
+   0x7a6a5aa8,
+   0xe40ecf0b,
+   0x9309ff9d,
+   0x0a00ae27,
+   0x7d079eb1,
+   0xf00f9344,
+   0x8708a3d2,
+   0x1e01f268,
+   0x6906c2fe,
+   0xf762575d,
+   0x806567cb,
+   0x196c3671,
+   0x6e6b06e7,
+   0xfed41b76,
+   0x89d32be0,
+   0x10da7a5a,
+   0x67dd4acc,
+   0xf9b9df6f,
+   0x8ebeeff9,
+   0x17b7be43,
+   0x60b08ed5,
+   0xd6d6a3e8,
+   0xa1d1937e,
+   0x38d8c2c4,
+   0x4fdff252,
+   0xd1bb67f1,
+   0xa6bc5767,
+   0x3fb506dd,
+   0x48b2364b,
+   0xd80d2bda,
+   0xaf0a1b4c,
+   0x36034af6,
+   0x41047a60,
+   0xdf60efc3,
+   0xa867df55,
+   0x316e8eef,
+   0x4669be79,
+   0xcb61b38c,
+   0xbc66831a,
+   0x256fd2a0,
+   0x5268e236,
+   0xcc0c7795,
+   0xbb0b4703,
+   0x220216b9,
+   0x5505262f,
+   0xc5ba3bbe,
+   0xb2bd0b28,
+   0x2bb45a92,
+   0x5cb36a04,
+   0xc2d7ffa7,
+   0xb5d0cf31,
+   0x2cd99e8b,
+   0x5bdeae1d,
+   0x9b64c2b0,
+   0xec63f226,
+   0x756aa39c,
+   0x026d930a,
+   0x9c0906a9,
+   0xeb0e363f,
+   0x72076785,
+   0x05005713,
+   0x95bf4a82,
+   0xe2b87a14,
+   0x7bb12bae,
+   0x0cb61b38,
+   0x92d28e9b,
+   0xe5d5be0d,
+   0x7cdcefb7,
+   0x0bdbdf21,
+   0x86d3d2d4,
+   0xf1d4e242,
+   0x68ddb3f8,
+   0x1fda836e,
+   0x81be16cd,
+   0xf6b9265b,
+   0x6fb077e1,
+   0x18b74777,
+   0x88085ae6,
+   0xff0f6a70,
+   0x66063bca,
+   0x11010b5c,
+   0x8f659eff,
+   0xf862ae69,
+   0x616bffd3,
+   0x166ccf45,
+   0xa00ae278,
+   0xd70dd2ee,
+   0x4e048354,
+   0x3903b3c2,
+   0xa7672661,
+   0xd06016f7,
+   0x4969474d,
+   0x3e6e77db,
+   0xaed16a4a,
+   0xd9d65adc,
+   0x40df0b66,
+   0x37d83bf0,
+   0xa9bcae53,
+   0xdebb9ec5,
+   0x47b2cf7f,
+   0x30b5ffe9,
+   0xbdbdf21c,
+   0xcabac28a,
+   0x53b39330,
+   0x24b4a3a6,
+   0xbad03605,
+   0xcdd70693,
+   0x54de5729,
+   0x23d967bf,
+   0xb3667a2e,
+   0xc4614ab8,
+   0x5d681b02,
+   0x2a6f2b94,
+   0xb40bbe37,
+   0xc30c8ea1,
+   0x5a05df1b,
+   0x2d02ef8d,
 };
 
 DWORD CalculateCRC32(UINT_PTR p, UINT startValue)
 {
    register DWORD hash = startValue;
-   hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 0) & 0xff)];
-   hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 8) & 0xff)];
-   hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 16) & 0xff)];
-   hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 24) & 0xff)];
+   hash                = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 0) & 0xff)];
+   hash                = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 8) & 0xff)];
+   hash                = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 16) & 0xff)];
+   hash                = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 24) & 0xff)];
 #ifdef WIN64
    hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 32) & 0xff)];
    hash = (hash >> 8) ^ crctab[(hash & 0xff) ^ ((p >> 40) & 0xff)];
@@ -963,11 +1138,10 @@ DWORD CalculateCRC32(UINT_PTR p, UINT startValue)
 void GetFormattedMessage(DWORD last_error)
 {
    // Retrieve the system error message for the last-error code
-   WCHAR lpMsgBuf[MAX_PATH] = { 0 };
+   WCHAR lpMsgBuf[MAX_PATH] = {0};
 
    FormatMessage(
-      FORMAT_MESSAGE_FROM_SYSTEM |
-      FORMAT_MESSAGE_IGNORE_INSERTS,
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
       NULL,
       last_error,
       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -989,8 +1163,7 @@ HMODULE GetCallingModule(UINT_PTR pCaller)
 {
    HMODULE hModule = NULL;
    MEMORY_BASIC_INFORMATION mbi;
-   if (VirtualQuery((LPCVOID)pCaller, &mbi, sizeof(MEMORY_BASIC_INFORMATION)) == sizeof(MEMORY_BASIC_INFORMATION))
-   {
+   if (VirtualQuery((LPCVOID)pCaller, &mbi, sizeof(MEMORY_BASIC_INFORMATION)) == sizeof(MEMORY_BASIC_INFORMATION)) {
       // the allocation base is the beginning of a PE file
       hModule = (HMODULE)mbi.AllocationBase;
    }
@@ -1013,13 +1186,13 @@ HMODULE GetCallingModule(UINT_PTR pCaller)
 //
 BOOL LoadBoolOption(LPCWSTR optionname, LPCWSTR defaultvalue, LPCWSTR inipath)
 {
-   const UINT buffersize = 64;
-   WCHAR buffer[buffersize] = { 0 };
+   const UINT buffersize    = 64;
+   WCHAR buffer[buffersize] = {0};
 
    WCHAR envirinmentoptionname[buffersize] = L"Vld";
    wcscat_s(envirinmentoptionname, buffersize, optionname);
 
-   if (!GetEnvironmentVariable(envirinmentoptionname, buffer, buffersize)) {
+   if (! GetEnvironmentVariable(envirinmentoptionname, buffer, buffersize)) {
       GetPrivateProfileString(L"Options", optionname, defaultvalue, buffer, buffersize, inipath);
    }
 
@@ -1041,13 +1214,13 @@ BOOL LoadBoolOption(LPCWSTR optionname, LPCWSTR defaultvalue, LPCWSTR inipath)
 //
 UINT LoadIntOption(LPCWSTR optionname, UINT defaultvalue, LPCWSTR inipath)
 {
-   const UINT buffersize = 64;
-   WCHAR buffer[buffersize] = { 0 };
+   const UINT buffersize    = 64;
+   WCHAR buffer[buffersize] = {0};
 
    WCHAR envirinmentoptionname[buffersize] = L"Vld";
    wcscat_s(envirinmentoptionname, buffersize, optionname);
 
-   if (!GetEnvironmentVariable(envirinmentoptionname, buffer, buffersize)) {
+   if (! GetEnvironmentVariable(envirinmentoptionname, buffer, buffersize)) {
       return GetPrivateProfileInt(L"Options", optionname, defaultvalue, inipath);
    }
 
@@ -1071,41 +1244,40 @@ UINT LoadIntOption(LPCWSTR optionname, UINT defaultvalue, LPCWSTR inipath)
 //
 VOID LoadStringOption(LPCWSTR optionname, LPWSTR outputbuffer, UINT buffersize, LPCWSTR inipath)
 {
-   const UINT namebuffersize = 64;
+   const UINT namebuffersize                   = 64;
    WCHAR envirinmentoptionname[namebuffersize] = L"Vld";
    wcscat_s(envirinmentoptionname, namebuffersize, optionname);
 
-   if (!GetEnvironmentVariable(envirinmentoptionname, outputbuffer, buffersize)) {
+   if (! GetEnvironmentVariable(envirinmentoptionname, outputbuffer, buffersize)) {
       GetPrivateProfileString(L"Options", optionname, L"", outputbuffer, buffersize, inipath);
    }
 }
-DWORD GetModuleName(LPWSTR modName, LPSTR modNameA, DWORD  nTCharSize) {
+DWORD GetModuleName(LPWSTR modName, LPSTR modNameA, DWORD nTCharSize)
+{
    assert(nTCharSize > 0);
    modName[0] = '\0';
 
    WCHAR tmpModName[MAX_PATH];
    CHAR tmpModNameA[MAX_PATH];
-   tmpModName[0] = L'\0';
+   tmpModName[0]  = L'\0';
    tmpModNameA[0] = '\0';
 
    HMODULE hMod;
    if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-      (LPCWSTR)GetModuleName, &hMod) == FALSE)
-   {
+          (LPCWSTR)GetModuleName, &hMod)
+       == FALSE) {
       return GetLastError();
       // fprintf(stderr, "GetModuleHandle failed, error = %d\n", ret);
    }
 
    DWORD copied = GetModuleFileName(hMod, (LPWSTR)(&tmpModName[0]), nTCharSize);
-   if (copied == 0 || nTCharSize == copied)
-   {
+   if (copied == 0 || nTCharSize == copied) {
       return GetLastError();
       //fprintf(stderr, "GetModuleFileName failed, error = %d\n", ret);
    }
 
    DWORD copiedA = GetModuleFileNameA(hMod, (LPSTR)(&tmpModNameA[0]), nTCharSize);
-   if (copiedA == 0 || nTCharSize == copied)
-   {
+   if (copiedA == 0 || nTCharSize == copied) {
       return GetLastError();
       //fprintf(stderr, "GetModuleFileName failed, error = %d\n", ret);
    }
@@ -1114,16 +1286,16 @@ DWORD GetModuleName(LPWSTR modName, LPSTR modNameA, DWORD  nTCharSize) {
    size_t count = 0;
    for (DWORD i = copied; i > 0; --i) {
       if (tmpModName[i] == L'\\') {
-         tmpModName[i] = L'\0';
+         tmpModName[i]  = L'\0';
          tmpModNameA[i] = '\0';
-         count = copied - i;
+         count          = copied - i;
          break;
       }
    }
 
    if (count > 0) {
-      wcsncpy_s(static_cast<wchar_t*>(&modName[0]), nTCharSize, static_cast<const wchar_t*>(&tmpModName[copied - count + 1]), count);
-      strncpy_s(modNameA, nTCharSize, (const char*)&tmpModNameA[copied - count + 1], count);
+      wcsncpy_s(static_cast<wchar_t *>(&modName[0]), nTCharSize, static_cast<const wchar_t *>(&tmpModName[copied - count + 1]), count);
+      strncpy_s(modNameA, nTCharSize, (const char *)&tmpModNameA[copied - count + 1], count);
    }
 
    return ERROR_SUCCESS;

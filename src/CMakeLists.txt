@@ -58,6 +58,12 @@ set(
  "vld_def.h"
 )
 
+
+set(WINRES 
+  "vld.rc"
+)
+
+
 target_compile_definitions(vld
  PRIVATE
  	VLD_EXPORTS
@@ -77,7 +83,15 @@ target_sources(vld
 PRIVATE
  ${VLD_HDR}
  ${VLD_SRC}
+ ${WINRES}
 )
+
+
+target_link_libraries(vld 
+# wsock32
+ ws2_32
+)
+
 
 source_group("vld Header" FILES ${VLD_HDR})
 source_group("vld Source" FILES ${VLD_SRC})

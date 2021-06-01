@@ -1,8 +1,9 @@
 /***********************************************************************
 * Visual Leak Detector - CallStack Class Implementations
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
+*
+* Copyright (c) 2005-2014 VLD Team
 *
 * This file is part of VLD.
 *
@@ -77,16 +78,16 @@ class CallStack
 public:
     CallStack ();
     virtual ~CallStack ();
-    static CallStack* Create();
+    static CallStack* Create(BOOL safe_stack_walk);
     // Public APIs - see each function definition for details.
     VOID clear ();
     // Prints the call stack to one of either / or the debug output window and or
     // a log file.
-    VOID dump (BOOL showinternalframes);
+    VOID dump(BOOL showinternalframes, BOOL skipStartupLeaks);
     // Formats the stack frame into a human readable format, and saves it for later retrieval.
-    int resolve(BOOL showinternalframes);
+    int resolve(BOOL showinternalframes, BOOL skipStartupLeaks);
     // Formats the stack frame into a human readable format, and saves it for later retrieval.
-    CONST WCHAR* getResolvedCallstack(BOOL showinternalframes);
+    CONST WCHAR* getResolvedCallstack(BOOL showinternalframes, BOOL skipStartupLeaks);
     virtual DWORD getHashValue() const = 0;
     virtual VOID getStackTrace (UINT32 maxdepth, const context_t& context) = 0;
     bool isCrtStartupAlloc();

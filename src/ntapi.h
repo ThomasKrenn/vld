@@ -1,8 +1,9 @@
 /***********************************************************************
 * Visual Leak Detector - NT API Definitions
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
+*
+* Copyright (c) 2005-2014 VLD Team
 *
 * This file is part of VLD.
 *

@@ -22,22 +22,16 @@
 
 #include "vld_def.h"
 
-typedef int            VLD_BOOL;
-typedef unsigned int   VLD_UINT;
-typedef size_t         VLD_SIZET;
-typedef void*          VLD_HMODULE;
+typedef int VLD_BOOL;
+typedef unsigned int VLD_UINT;
+typedef size_t VLD_SIZET;
+typedef void *VLD_HMODULE;
 
 #if defined _DEBUG || defined VLD_FORCE_ENABLE
 
 #ifdef __AFXWIN_H__
 #error[VLD COMPILE ERROR] '#include <vld.h>' should appear before '#include <afxwin.h>' in file stdafx.h
 #endif
-
-
-// #define RELPATH "..\\..\\x64\\"
-// #define VLDLIBNAME "\\vld.lib"
-// #define VLDLIBPATH RELPATH CMAKE_INTDIR VLDLIBNAME
-// #pragma comment(lib, VLDLIBPATH)
 
 // Force a symbolic reference to the global VisualLeakDetector class object from
 // the DLL. This ensures that the DLL is loaded and linked with the program,
@@ -51,7 +45,7 @@ typedef void*          VLD_HMODULE;
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif      // __cplusplus
 
 // VLDDisable - Disables Visual Leak Detector's memory leak detection at
 //   runtime. If memory leak detection is already disabled, then calling this
@@ -71,9 +65,9 @@ extern "C" {
 //
 //  Return Value:
 //
-//    None.
+//    bool, returns true, if VLD was previously enabled (on this thread)
 //
-__declspec(dllimport) void VLDDisable ();
+__declspec(dllimport) bool VLDDisable();
 
 // VLDEnable - Enables Visual Leak Detector's memory leak detection at runtime.
 //   If memory leak detection is already enabled, which it is by default, then
@@ -95,7 +89,7 @@ __declspec(dllimport) void VLDDisable ();
 //
 //    None.
 //
-__declspec(dllimport) void VLDEnable ();
+__declspec(dllimport) void VLDEnable();
 
 // VLDRestore - Restore Visual Leak Detector's previous state.
 //
@@ -103,7 +97,7 @@ __declspec(dllimport) void VLDEnable ();
 //
 //    None.
 //
-__declspec(dllimport) void VLDRestore ();
+__declspec(dllimport) void VLDRestore();
 
 // VLDGlobalDisable - Disables Visual Leak Detector's memory leak detection at
 //   runtime in all threads. If memory leak detection is already disabled,
@@ -113,7 +107,7 @@ __declspec(dllimport) void VLDRestore ();
 //
 //    None.
 //
-__declspec(dllimport) void VLDGlobalDisable ();
+__declspec(dllimport) void VLDGlobalDisable();
 
 // VLDGlobalEnable - Enables Visual Leak Detector's memory leak detection
 //   at runtime in all threads. If memory leak detection is already enabled,
@@ -123,7 +117,7 @@ __declspec(dllimport) void VLDGlobalDisable ();
 //
 //    None.
 //
-__declspec(dllimport) void VLDGlobalEnable ();
+__declspec(dllimport) void VLDGlobalEnable();
 
 // VLDReportLeaks - Report leaks up to the execution point.
 //
@@ -131,7 +125,7 @@ __declspec(dllimport) void VLDGlobalEnable ();
 //
 //    None.
 //
-__declspec(dllimport) VLD_UINT VLDReportLeaks ();
+__declspec(dllimport) VLD_UINT VLDReportLeaks();
 
 // VLDReportThreadLeaks - Report thread leaks up to the execution point.
 //
@@ -141,7 +135,7 @@ __declspec(dllimport) VLD_UINT VLDReportLeaks ();
 //
 //    None.
 //
-__declspec(dllimport) VLD_UINT VLDReportThreadLeaks (VLD_UINT threadId);
+__declspec(dllimport) VLD_UINT VLDReportThreadLeaks(VLD_UINT threadId);
 
 // VLDGetLeaksCount - Return memory leaks count to the execution point.
 //
@@ -149,7 +143,7 @@ __declspec(dllimport) VLD_UINT VLDReportThreadLeaks (VLD_UINT threadId);
 //
 //    None.
 //
-__declspec(dllimport) VLD_UINT VLDGetLeaksCount ();
+__declspec(dllimport) VLD_UINT VLDGetLeaksCount();
 
 // VLDGetThreadLeaksCount - Return thread memory leaks count to the execution point.
 //
@@ -159,7 +153,7 @@ __declspec(dllimport) VLD_UINT VLDGetLeaksCount ();
 //
 //    None.
 //
-__declspec(dllimport) VLD_UINT VLDGetThreadLeaksCount (VLD_UINT threadId);
+__declspec(dllimport) VLD_UINT VLDGetThreadLeaksCount(VLD_UINT threadId);
 
 // VLDMarkAllLeaksAsReported - Mark all leaks as reported.
 //
@@ -167,7 +161,7 @@ __declspec(dllimport) VLD_UINT VLDGetThreadLeaksCount (VLD_UINT threadId);
 //
 //    None.
 //
-__declspec(dllimport) void VLDMarkAllLeaksAsReported ();
+__declspec(dllimport) void VLDMarkAllLeaksAsReported();
 
 // VLDMarkThreadLeaksAsReported - Mark thread leaks as reported.
 //
@@ -177,8 +171,7 @@ __declspec(dllimport) void VLDMarkAllLeaksAsReported ();
 //
 //    None.
 //
-__declspec(dllimport) void VLDMarkThreadLeaksAsReported (VLD_UINT threadId);
-
+__declspec(dllimport) void VLDMarkThreadLeaksAsReported(VLD_UINT threadId);
 
 // VLDRefreshModules - Look for recently loaded DLLs and patch them if necessary.
 //
@@ -187,7 +180,6 @@ __declspec(dllimport) void VLDMarkThreadLeaksAsReported (VLD_UINT threadId);
 //    None.
 //
 __declspec(dllimport) void VLDRefreshModules();
-
 
 // VLDEnableModule - Enable Memory leak checking on the specified module.
 //
@@ -199,7 +191,6 @@ __declspec(dllimport) void VLDRefreshModules();
 //
 
 __declspec(dllimport) void VLDEnableModule(VLD_HMODULE module);
-
 
 // VLDDisableModule - Disable Memory leak checking on the specified module.
 //
@@ -304,7 +295,7 @@ __declspec(dllimport) void VLDSetReportOptions(VLD_UINT option_mask, const wchar
 //
 //    int: 0 if success.
 //
-__declspec(dllimport) int VLDSetReportHook(int mode,  VLD_REPORT_HOOK pfnNewHook);
+__declspec(dllimport) int VLDSetReportHook(int mode, VLD_REPORT_HOOK pfnNewHook);
 
 // VLDResolveCallstacks - Performs symbol resolution for all saved extent CallStack's that have
 // been tracked by Visual Leak Detector. This function is necessary for applications that
@@ -321,9 +312,9 @@ __declspec(dllexport) int VLDResolveCallstacks();
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif      // __cplusplus
 
-#else // !_DEBUG
+#else      // !_DEBUG
 
 #define VLDEnable()
 #define VLDDisable()
@@ -342,10 +333,10 @@ __declspec(dllexport) int VLDResolveCallstacks();
 #define VLDGetOptions() (0)
 #define VLDGetReportFilename(a)
 #define VLDSetOptions(a, b, c)
-#define VLDSetReportHook(a, b)
+#define VLDSetReportHook(a, b) (-1)
 #define VLDSetModulesList(a)
 #define VLDGetModulesList(a, b) (FALSE)
 #define VLDSetReportOptions(a, b)
 #define VLDResolveCallstacks() (0)
 
-#endif // _DEBUG
+#endif      // _DEBUG

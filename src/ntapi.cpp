@@ -1,8 +1,9 @@
 /***********************************************************************
 * Visual Leak Detector - Global NT API Function Pointers
-* Copyright (c) 2005-2014 VLD Team
 *
 * Copyright (c) 2020-2021 Thomas Krenn
+*
+* Copyright (c) 2005-2014 VLD Team
 *
 * This file is part of VLD.
 *
@@ -24,14 +25,14 @@
 
 // Global function pointers for explicit dynamic linking with NT APIs that can't
 // be load-time linked (there is no import library available for these).
-LdrLoadDll_t        LdrLoadDll;
-LdrLoadDllWin8_t    LdrLoadDllWin8;
-RtlAllocateHeap_t   RtlAllocateHeap;
-RtlFreeHeap_t       RtlFreeHeap;
+LdrLoadDll_t LdrLoadDll;
+LdrLoadDllWin8_t LdrLoadDllWin8;
+RtlAllocateHeap_t RtlAllocateHeap;
+RtlFreeHeap_t RtlFreeHeap;
 RtlReAllocateHeap_t RtlReAllocateHeap;
 
-LdrGetDllHandle_t   LdrGetDllHandle;
+LdrGetDllHandle_t LdrGetDllHandle;
 LdrGetProcedureAddress_t LdrGetProcedureAddress;
-LdrUnloadDll_t      LdrUnloadDll;
+LdrUnloadDll_t LdrUnloadDll;
 LdrLockLoaderLock_t LdrLockLoaderLock;
 LdrUnlockLoaderLock_t LdrUnlockLoaderLock;
