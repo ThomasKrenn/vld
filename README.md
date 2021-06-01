@@ -1,2 +1,2 @@
-# vld
+# VLD
 Visual Leak Debugger
