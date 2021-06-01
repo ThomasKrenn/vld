@@ -33,18 +33,18 @@ extern ImageDirectoryEntries g_Ide;
 //
 //    Returns pointer to descriptor.
 //
-IMAGE_IMPORT_DESCRIPTOR* FindOriginalImportDescriptor(HMODULE importmodule, LPCSTR exportmodulename)
+IMAGE_IMPORT_DESCRIPTOR *FindOriginalImportDescriptor(HMODULE importmodule, LPCSTR exportmodulename)
 {
-   IMAGE_IMPORT_DESCRIPTOR* idte = NULL;
-   IMAGE_SECTION_HEADER* section = NULL;
-   ULONG                    size = 0;
+   IMAGE_IMPORT_DESCRIPTOR *idte = NULL;
+   IMAGE_SECTION_HEADER *section = NULL;
+   ULONG size                    = 0;
 
    // Locate the importing module's Import Directory Table (IDT) entry for the
    // exporting module. The importing module actually can have several IATs --
    // one for each export module that it imports something from. The IDT entry
    // gives us the offset of the IAT for the module we are interested in.
    {
-      idte = (IMAGE_IMPORT_DESCRIPTOR*)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
+      idte = (IMAGE_IMPORT_DESCRIPTOR *)g_Ide.ImageDirectoryEntryToDataEx((PVOID)GetCallingModule((UINT_PTR)importmodule), TRUE,
          IMAGE_DIRECTORY_ENTRY_IMPORT, &size, &section);
    }
 
@@ -86,24 +86,23 @@ IMAGE_IMPORT_DESCRIPTOR* FindOriginalImportDescriptor(HMODULE importmodule, LPCS
 //    Returns TRUE if the module has been patched to use the specified
 //    replacement export.
 //
-BOOL FindPatch(HMODULE importmodule, moduleentry_t* module)
+BOOL FindPatch(HMODULE importmodule, moduleentry_t *module)
 {
-   IMAGE_IMPORT_DESCRIPTOR* idte;
+   IMAGE_IMPORT_DESCRIPTOR *idte;
 
    idte = FindOriginalImportDescriptor(importmodule, module->exportModuleName);
    if (idte == NULL)
       return FALSE;
 
-   int i = 0;
-   patchentry_t* entry = module->patchTable;
-   while (entry->importName)
-   {
+   int i               = 0;
+   patchentry_t *entry = module->patchTable;
+   while (entry->importName) {
       LPCVOID replacement = entry->replacement;
 
-      IMAGE_THUNK_DATA* iate;
+      IMAGE_THUNK_DATA *iate;
 
       // Locate the replacement's IAT entry.
-      iate = (IMAGE_THUNK_DATA*)R2VA(importmodule, idte->FirstThunk);
+      iate = (IMAGE_THUNK_DATA *)R2VA(importmodule, idte->FirstThunk);
       while (iate->u1.Function != 0x0) {
          if (iate->u1.Function == (DWORD_PTR)replacement) {
             // Found the IAT entry for the replacement. This patch has been
@@ -112,7 +111,8 @@ BOOL FindPatch(HMODULE importmodule, moduleentry_t* module)
          }
          iate++;
       }
-      entry++; i++;
+      entry++;
+      i++;
    }
 
    // The module does not import the replacement. The patch has not been
@@ -143,8 +143,8 @@ BOOL IsModulePatched(HMODULE importmodule, moduleentry_t patchtable[], UINT tabl
    // is installed in the import module, then the module has been patched.
    BOOL found = FALSE;
    for (UINT index = 0; index < tablesize; index++) {
-      moduleentry_t* entry = &patchtable[index];
-      found = FindPatch(importmodule, entry);
+      moduleentry_t *entry = &patchtable[index];
+      found                = FindPatch(importmodule, entry);
       if (found) {
          // Found one of the listed patches installed in the import module.
          return TRUE;
@@ -154,7 +154,6 @@ BOOL IsModulePatched(HMODULE importmodule, moduleentry_t patchtable[], UINT tabl
    // No patches listed in the patch table were found in the import module.
    return FALSE;
 }
-
 
 // FindImport - Determines if the specified module imports the named import
 //   from the named exporting module.
@@ -179,9 +178,9 @@ BOOL IsModulePatched(HMODULE importmodule, moduleentry_t patchtable[], UINT tabl
 //
 BOOL FindImport(HMODULE importmodule, HMODULE exportmodule, LPCSTR exportmodulename, LPCSTR importname)
 {
-   IMAGE_IMPORT_DESCRIPTOR* idte;
-   IMAGE_THUNK_DATA* iate;
-   FARPROC                  import;
+   IMAGE_IMPORT_DESCRIPTOR *idte;
+   IMAGE_THUNK_DATA *iate;
+   FARPROC import;
 
    DbgTrace(L"dbghelp32.dll %i: FindImport - ImageDirectoryEntryToDataEx\n", GetCurrentThreadId());
    idte = FindOriginalImportDescriptor(importmodule, exportmodulename);
@@ -194,7 +193,7 @@ BOOL FindImport(HMODULE importmodule, HMODULE exportmodule, LPCSTR exportmodulen
 
    // Perhaps the named export module does not actually export the named import?
    //assert(import != NULL);   - on my Windows 7 x64, VS 9 SP1, Win x32 project assertion failure will cause new DLL loading, and then infinite loop of calls to findimport() and stack overflow. Maybe it's caused by antivirus, nevertheless this solution fixes infinite loop
-   if (import == NULL)    // - instead of assert
+   if (import == NULL)      // - instead of assert
    {
       OutputDebugStringW(__FUNCTIONW__ L"(" __FILEW__ L") : import == NULL\n");
       if (::IsDebuggerPresent())
@@ -204,7 +203,7 @@ BOOL FindImport(HMODULE importmodule, HMODULE exportmodule, LPCSTR exportmodulen
    }
 
    // Locate the import's IAT entry.
-   iate = (IMAGE_THUNK_DATA*)R2VA(importmodule, idte->FirstThunk);
+   iate = (IMAGE_THUNK_DATA *)R2VA(importmodule, idte->FirstThunk);
    while (iate->u1.Function != 0x0) {
       if (iate->u1.Function == (DWORD_PTR)import) {
          // Found the IAT entry. The module imports the named import.
